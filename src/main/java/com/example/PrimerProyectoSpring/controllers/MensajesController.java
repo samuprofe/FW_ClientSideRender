@@ -70,9 +70,29 @@ public class MensajesController {
     public Void deleteMensaje(@PathVariable Long id){
         //Recorrer el array y borrar el elemento cuyo id sea igual al que llega como parámetro
         for (Mensaje m : mensajes){
-            if(m.getId().equals(id)){   //if(m.getId().intValue() == id.intValue())
+            if(m.getId().equals(id)){
                 mensajes.remove(m);
             }
+        }
+        return null;
+    }
+
+    /*
+    Editar Mensajes
+    PUT http://localhost:8080/mensajes/1   Se envía un JSON con el mensaje editado
+     */
+    @PutMapping("/mensajes/{id}")
+    public Mensaje editMensaje(@RequestBody Mensaje mensajeEditado, @PathVariable Long id){
+        for (Mensaje m : mensajes){
+            if(m.getId().equals(id)){
+                if(!mensajeEditado.getTexto().isEmpty()){
+                    m.setTexto(mensajeEditado.getTexto());
+                }
+                if(!mensajeEditado.getTitulo().isEmpty()) {
+                    m.setTitulo(mensajeEditado.getTitulo());
+                }
+            }
+            return m;
         }
         return null;
     }
