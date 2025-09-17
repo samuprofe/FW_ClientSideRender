@@ -1,34 +1,80 @@
 package com.example.PrimerProyectoSpring.controllers;
 
 import com.example.PrimerProyectoSpring.entities.Mensaje;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 public class MensajesController {
 
+    ArrayList<Mensaje> mensajes;
+
     public MensajesController()
     {
-
-    }
-
-//    @GetMapping("/")
-//    public List<String> obtenerMensajes(){
-//
-//    }
-
-    @GetMapping("/mensajes/{id}")
-    public Mensaje getMensaje(Long id){
-        Mensaje m = Mensaje.builder()
+        Mensaje m1 = Mensaje.builder()
                 .texto("texto del mensaje")
                 .titulo("titulo del mensaje")
-                .id(1L)
+                .id(4L)
                 .fecha(LocalDateTime.now())
                 .build();
-        return m;
+        Mensaje m2 = Mensaje.builder()
+                .texto("texto del mensaje")
+                .titulo("titulo del mensaje")
+                .id(5L)
+                .fecha(LocalDateTime.now())
+                .build();
+        mensajes = new ArrayList<>();
+        mensajes.add(m1);
+        mensajes.add(m2);
     }
+
+    /**
+     * GET http://localhost:8080/mensajes
+     */
+    @GetMapping("/mensajes")
+    public List<Mensaje> obtenerMensajes(){
+        return mensajes;
+    }
+
+
+    /**
+     * GET http://localhost:8080/mensajes/1
+     */
+    @GetMapping("/mensajes/{id}")
+    public Mensaje getMensaje(@PathVariable Long id){
+        /*
+        Recorrer el ArrayList para encontrar el mensaje con el id recibido como parámetro
+         */
+        for (Mensaje m : mensajes){
+            if(m.getId() == id.intValue()){
+                return m;
+            }
+        }
+        return null;
+    }
+
+    /*
+        POST http://localhost/mensajes --> Va a insertar un mensaje
+     */
+    @PostMapping("/mensajes")
+    public Mensaje addMensaje(@RequestBody Mensaje mensajeNuevo){
+         mensajes.add(mensajeNuevo);
+         return mensajeNuevo;
+    }
+
+    @DeleteMapping("/mensajes/{id}")
+    public Void deleteMensaje(@PathVariable Long id){
+        //Recorrer el array y borrar el elemento cuyo id sea igual al que llega como parámetro
+        for (Mensaje m : mensajes){
+            if(m.getId().equals(id)){   //if(m.getId().intValue() == id.intValue())
+                mensajes.remove(m);
+            }
+        }
+        return null;
+    }
+
 }
