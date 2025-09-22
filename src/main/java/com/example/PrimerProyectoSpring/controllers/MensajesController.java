@@ -37,6 +37,7 @@ public class MensajesController {
      */
     @GetMapping("/mensajes")
     public List<Mensaje> obtenerMensajes(){
+
         return mensajes;
     }
 
@@ -84,15 +85,16 @@ public class MensajesController {
     @PutMapping("/mensajes/{id}")
     public Mensaje editMensaje(@RequestBody Mensaje mensajeEditado, @PathVariable Long id){
         for (Mensaje m : mensajes){
-            if(m.getId().equals(id)){
+            if(m.getId()!=null && m.getId().equals(id)){
                 if(!mensajeEditado.getTexto().isEmpty()){
                     m.setTexto(mensajeEditado.getTexto());
                 }
                 if(!mensajeEditado.getTitulo().isEmpty()) {
                     m.setTitulo(mensajeEditado.getTitulo());
                 }
+                return m;
             }
-            return m;
+
         }
         return null;
     }
