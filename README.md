@@ -54,10 +54,14 @@ La estructura del proyecto sigue un patrón común para aplicaciones web basadas
 
 ## 📄 Licencia
 
-Este proyecto está distribuido bajo la **Licencia Apache 2.0**.
+Este proyecto está distribuido bajo la licencia **Creative Commons Atribución-No Comercial 4.0 Internacional (CC BY-NC 4.0)**.
 
-Esta licencia permite su descarga, modificación y utilización (incluso para fines comerciales), siempre que se conserve el aviso de copyright y se nombre al autor original.
+**Esto significa que puedes:**
+* Compartir y adaptar el código.
 
+**Pero debes:**
+1.  **Dar atribución** al autor original.
+2.  **No usar** el material con fines **comerciales**.
 ***
 
 ## 👤 Autor
