@@ -13,19 +13,20 @@ import java.util.List;
 public class MensajesController {
 
     ArrayList<Mensaje> mensajes;
+    private Long nextId = 3L;
 
     public MensajesController()
     {
         Mensaje m1 = Mensaje.builder()
                 .texto("texto del mensaje")
                 .titulo("titulo del mensaje")
-                .id(4L)
+                .id(1L)
                 .fecha(LocalDateTime.now())
                 .build();
         Mensaje m2 = Mensaje.builder()
                 .texto("texto del mensaje")
                 .titulo("titulo del mensaje")
-                .id(5L)
+                .id(2L)
                 .fecha(LocalDateTime.now())
                 .build();
         mensajes = new ArrayList<>();
@@ -38,7 +39,6 @@ public class MensajesController {
      */
     @GetMapping("/mensajes")
     public List<Mensaje> obtenerMensajes(){
-
         return mensajes;
     }
 
@@ -64,19 +64,21 @@ public class MensajesController {
      */
     @PostMapping("/mensajes")
     public Mensaje addMensaje(@RequestBody Mensaje mensajeNuevo){
-         mensajes.add(mensajeNuevo);
-         return mensajeNuevo;
+        mensajeNuevo.setId(nextId++);
+        mensajes.add(mensajeNuevo);
+        return mensajeNuevo;
     }
 
     @DeleteMapping("/mensajes/{id}")
-    public Void deleteMensaje(@PathVariable Long id){
+    public ResponseEntity deleteMensaje(@PathVariable Long id){
         //Recorrer el array y borrar el elemento cuyo id sea igual al que llega como parámetro
         for (Mensaje m : mensajes){
             if(m.getId().equals(id)){
                 mensajes.remove(m);
+                return ResponseEntity.noContent().build();
             }
         }
-        return null;
+        return ResponseEntity.notFound().build();
     }
 
     /*

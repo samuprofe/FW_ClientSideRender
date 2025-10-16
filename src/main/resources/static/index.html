@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente CSR: API de Mensajes (UT1 DAM)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos personalizados */
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .action-button {
+            margin-right: 5px;
+        }
+        .alert-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Gestor de Mensajes (API REST en Memoria)</h1>
+    <p class="text-center lead">Cliente de Renderizado en el Cliente (CSR) que consume la API de Spring Boot en `http://localhost:8080`.</p>
+
+    <div id="alertContainer"></div>
+
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalMensaje" onclick="abrirModalCreacion()">
+            <i class="bi bi-plus-circle"></i> Nuevo Mensaje
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Texto</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody id="mensajesTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMensaje" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formularioMensaje">
+                    <input type="hidden" id="mensajeId">
+
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="titulo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="texto" class="form-label">Texto</label>
+                        <textarea class="form-control" id="texto" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarMensaje()">Guardar Mensaje</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // URL base de tu API de Spring Boot
+    const API_BASE_URL = 'http://localhost:8080/mensajes';
+    const modalMensaje = new bootstrap.Modal(document.getElementById('modalMensaje'));
+
+    // =======================================================
+    // FUNCIÓN DE NOTIFICACIÓN (Para feedback visual)
+    // =======================================================
+    function mostrarAlerta(mensaje, tipo) {
+        const container = document.getElementById('alertContainer');
+        const alertHTML = `
+            <div class="alert alert-${tipo} alert-dismissible fade show alert-fixed" role="alert">
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        container.innerHTML = alertHTML;
+        // Eliminar la alerta después de 5 segundos
+        setTimeout(() => {
+            const alertElement = container.querySelector('.alert');
+            if (alertElement) {
+                bootstrap.Alert.getInstance(alertElement)?.close();
+            }
+        }, 5000);
+    }
+
+    // =======================================================
+    // 1. OBTENER TODOS LOS MENSAJES (GET ALL)
+    // =======================================================
+    async function obtenerMensajes() {
+        const tableBody = document.getElementById('mensajesTableBody');
+        tableBody.innerHTML = ''; // Limpiar la tabla antes de cargar
+
+        try {
+            const response = await fetch(API_BASE_URL);
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            const mensajes = await response.json();
+
+            if (mensajes.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No hay mensajes registrados.</td></tr>';
+                return;
+            }
+
+            mensajes.forEach(mensaje => {
+                // Formatear la fecha
+                const fecha = new Date(mensaje.fecha).toLocaleString();
+
+                const row = `
+                    <tr>
+                        <td>${mensaje.id}</td>
+                        <td>${mensaje.titulo}</td>
+                        <td>${mensaje.texto}</td>
+                        <td>${fecha}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info action-button" onclick="abrirModalEdicion(${mensaje.id})">Editar</button>
+                            <button class="btn btn-sm btn-danger action-button" onclick="eliminarMensaje(${mensaje.id})">Borrar</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error('Error al obtener mensajes:', error);
+            mostrarAlerta(`Error al conectar con la API: ${error.message}. Asegúrate de que Spring Boot esté corriendo en el puerto 8080.`, 'danger');
+        }
+    }
+
+    // =======================================================
+    // 2. CREAR Y EDITAR (POST/PUT)
+    // =======================================================
+
+    function abrirModalCreacion() {
+        document.getElementById('modalLabel').textContent = 'Crear Nuevo Mensaje';
+        document.getElementById('mensajeId').value = ''; // Limpiar ID para modo creación
+        document.getElementById('formularioMensaje').reset(); // Limpiar formulario
+        document.getElementById('btnGuardar').textContent = 'Crear';
+    }
+
+    async function abrirModalEdicion(id) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/${id}`);
+            if (response.status === 404) {
+                mostrarAlerta(`Error 404: El mensaje con ID ${id} no fue encontrado.`, 'warning');
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            const mensaje = await response.json();
+
+            // Cargar datos en el formulario
+            document.getElementById('modalLabel').textContent = `Editar Mensaje ID: ${id}`;
+            document.getElementById('mensajeId').value = id;
+            document.getElementById('titulo').value = mensaje.titulo;
+            document.getElementById('texto').value = mensaje.texto;
+            document.getElementById('btnGuardar').textContent = 'Guardar Cambios';
+
+            modalMensaje.show();
+        } catch (error) {
+            console.error('Error al obtener mensaje para edición:', error);
+            mostrarAlerta('Error al cargar datos para edición.', 'danger');
+        }
+    }
+
+    async function guardarMensaje() {
+        const id = document.getElementById('mensajeId').value;
+        const titulo = document.getElementById('titulo').value;
+        const texto = document.getElementById('texto').value;
+
+        if (!titulo || !texto) {
+            mostrarAlerta('El título y el texto son obligatorios.', 'warning');
+            return;
+        }
+
+        const mensajeData = { titulo, texto };
+        let method, url;
+
+        if (id) {
+            // EDITAR (PUT)
+            method = 'PUT';
+            url = `${API_BASE_URL}/${id}`;
+        } else {
+            // CREAR (POST)
+            method = 'POST';
+            url = API_BASE_URL;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mensajeData)
+            });
+
+            if (response.status === 201) {
+                mostrarAlerta('Mensaje creado exitosamente (HTTP 201).', 'success');
+            } else if (response.status === 200) {
+                mostrarAlerta('Mensaje actualizado exitosamente (HTTP 200).', 'success');
+            } else if (response.status === 404) {
+                mostrarAlerta('Error 404: No se encontró el mensaje a editar.', 'warning');
+                return;
+            } else {
+                 throw new Error(`Error al guardar: HTTP ${response.status}`);
+            }
+
+            modalMensaje.hide();
+            obtenerMensajes(); // Recargar la tabla
+        } catch (error) {
+            console.error('Error al guardar mensaje:', error);
+            mostrarAlerta(`Error al guardar: ${error.message}`, 'danger');
+        }
+    }
+
+    // =======================================================
+    // 3. ELIMINAR (DELETE)
+    // =======================================================
+    async function eliminarMensaje(id) {
+        if (!confirm(`¿Estás seguro de que quieres eliminar el mensaje con ID ${id}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.status === 204) {
+                mostrarAlerta('Mensaje eliminado exitosamente (HTTP 204 No Content).', 'success');
+            } else if (response.status === 404) {
+                mostrarAlerta('Error 404: El mensaje ya no existe.', 'warning');
+            } else {
+                throw new Error(`Error al eliminar: HTTP ${response.status}`);
+            }
+
+            obtenerMensajes(); // Recargar la tabla
+        } catch (error) {
+            console.error('Error al eliminar mensaje:', error);
+            mostrarAlerta(`Error al eliminar: ${error.message}`, 'danger');
+        }
+    }
+
+    // Cargar los mensajes al iniciar la página
+    window.onload = obtenerMensajes;
+</script>
+</body>
+</html>
